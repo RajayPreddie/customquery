@@ -44,7 +44,7 @@ const App = () => {
 
   // Calendar
 
-  const [dateInput, setDateInput] = useState("");
+  
   const [dateRange, setDateRange] = useState({
     startDate: null,
     endDate: null,
@@ -64,6 +64,8 @@ const App = () => {
     };
   });
 
+  
+
   // Transcation Time Options
 
   const [toHour, setToHour] = useState("5:00 am");
@@ -72,17 +74,16 @@ const App = () => {
   // Metric Options
   const [inputMetrics, setInputMetrics] = useState([
     {
-      key: 0,
+      alias: "",
+      number: 0,
+      compareType: "",
+    },
+    {
       alias: "",
       number: 0,
       compareType: "",
     },
   ]);
-
-  const [equality, setEquality] = useState("=");
-
-  // Numerical value: two types, decimal and whole number: 2 decimals or 0
-  const [number, setNumber] = useState(0);
 
   // create date range
   const makeDateRange = () => {
@@ -118,17 +119,17 @@ const App = () => {
 
   // create the metrics criteria
   const makeMetrics = () => {
-    return [
-      {
+    return inputMetrics.map((inputMetric) => {
+      return {
         metricCode: metricDefinitions
-          .find((metric) => metric.alias === inputMetrics.alias)
+          .find((metric) => metric.alias === inputMetric.alias)
           .metricCode.toString(),
         compareType: compareTypes
-          .find((comparison) => comparison.value === equality)
+          .find((comparison) => comparison.value === inputMetric.compareType)
           .comparetype.toString(),
-        value: parseInt(number),
-      },
-    ];
+        value: parseInt(inputMetric.number),
+      };
+    });
   };
 
   async function postData(url = "", requestData) {
@@ -191,11 +192,10 @@ const App = () => {
     setFocusedInput(focusedInput);
   };
 
-  const [metricCriteria, setMetricCriteria] = useState([{}]);
+
 
   const [metricDefinitions, setMetricDefinitions] = useState([]);
 
-  const [searchTest, setSearchTest] = useState([]);
 
   metricDefinitions.map((m, index) => {
     return {
@@ -245,26 +245,24 @@ const App = () => {
   // TransactionTotalAmount, TransactionNetAmount, ItemSoldQty
   // BeverageQty, DiscountAmount, ItemDeletedAmount,
   // DiscountRatio, RefundAmount
+  
 
-  const addMetric = () => {
-    if (inputMetrics.length <= 5) {
-      const newMetric = {
-        key: inputMetrics.length,
-        alias: "",
-        compareType: "",
-        number: 0,
-      };
-      setInputMetrics([...inputMetrics, newMetric]);
-    } else {
-      alert("No more metrics");
+
+  const setMetric = (dataValue, index, property) => {
+    const newInputMetrics = [];
+
+    for (let i = 0; i < inputMetrics.length; i++) {
+      newInputMetrics.push(inputMetrics[i]);
     }
+    newInputMetrics[index][property] = dataValue;
+    setInputMetrics(newInputMetrics);
   };
 
   const deleteMetric = (metricId) => {
     if (inputMetrics.length > 1) {
-      setInputMetrics(inputMetrics.filter((metric) => metric.id !== metricId))
+      setInputMetrics(inputMetrics.filter((metric) => metric.id !== metricId));
     }
-  }
+  };
 
   return (
     <div className="App">
@@ -316,14 +314,15 @@ const App = () => {
                       onChange={(e, data) => setToHour(data.value)}
                     />
                   </Form.Field>
-                  <Button type="button" onClick={(e, data) => addMetric()}>
+                  <Button type="button" >
                     <Icon name="plus" /> Add Metric
                   </Button>
-                  {inputMetrics.map((metric) => (
-                    <Form.Group>
+                  {inputMetrics.map((metric, index) => {
+                    
+                    return <Form.Group key={index}>
                       <Form.Field>
                         <Dropdown
-                          placeholder="Metrics"
+                          placeholder= "Metrics"
                           options={metricDefinitions.map((metric, index) => {
                             return {
                               key: index,
@@ -333,10 +332,7 @@ const App = () => {
                           })}
                           defaultValue={metric.alias}
                           onChange={(e, data) =>
-                            setInputMetrics([
-                              ...inputMetrics,
-                              metric.alias = data.value,
-                            ])
+                            setMetric(data.value, index, "alias")
                           }
                         />
                       </Form.Field>
@@ -345,12 +341,9 @@ const App = () => {
                           placeholder={"="}
                           options={compareTypes}
                           value={metric.compareType}
-                          onChange={(e, data) =>
-                            setInputMetrics([
-                              ...inputMetrics,
-                              metric.compareType = data.value
-                            ])
-                          }
+                          onChange={(e, data) => {
+                            setMetric(data.value, index, "compareType");
+                          }}
                         />
                       </Form.Field>
                       <Form.Field>
@@ -358,27 +351,22 @@ const App = () => {
                           placeholder={
                             metric.alias.indexOf("$") !== -1
                               ? "$0.00"
-                              : metric.alias
-                                  .toString()
-                                  .indexOf("%") !== -1
+                              : metric.alias.toString().indexOf("%") !== -1
                               ? "%"
                               : "Quantity"
                           }
                           value={metric.number}
-                          onChange={(e, data) =>
-                            setInputMetrics([
-                              ...inputMetrics,
-                              metric.number = data.value,
-                            ])
-                          }
+                          onChange={(e, data) => {
+                            setMetric(data.value, index, "number");
+                          }}
                         />
                       </Form.Field>
 
-                      <Button type = "button" onClick={deleteMetric(metric.key)}>
+                      <Button type="button" onClick={deleteMetric(index)}>
                         <Icon name="minus" />{" "}
                       </Button>
                     </Form.Group>
-                  ))}
+                  })}
 
                   <Form.Field>
                     <Form.Field></Form.Field>
@@ -387,9 +375,9 @@ const App = () => {
                   <Form.Field>
                     <Button
                       type="button"
-                      onClick={(event, data) => {
-                        setMetricCriteria(); // array rerenders every time we add something
-                      }}
+                      // onClick={(event, data) => {
+                      //   // setMetricCriteria(); // array rerenders every time we add something
+                      // }}
                     >
                       Add Criteria
                     </Button>
