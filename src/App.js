@@ -14,6 +14,7 @@ import {
   Segment,
   Input,
   Dropdown,
+  Table,
 } from "semantic-ui-react";
 import {
   Calendar,
@@ -44,7 +45,6 @@ const App = () => {
 
   // Calendar
 
-  
   const [dateRange, setDateRange] = useState({
     startDate: null,
     endDate: null,
@@ -64,8 +64,6 @@ const App = () => {
     };
   });
 
-  
-
   // Transcation Time Options
 
   const [toHour, setToHour] = useState("5:00 am");
@@ -74,17 +72,13 @@ const App = () => {
   // Metric Options
   const [inputMetrics, setInputMetrics] = useState([
     {
-      alias: "",
-      number: 0,
-      compareType: "",
-    },
-    {
+      id: 1,
       alias: "",
       number: 0,
       compareType: "",
     },
   ]);
-
+  console.log(inputMetrics);
   // create date range
   const makeDateRange = () => {
     return {
@@ -192,10 +186,7 @@ const App = () => {
     setFocusedInput(focusedInput);
   };
 
-
-
   const [metricDefinitions, setMetricDefinitions] = useState([]);
-
 
   metricDefinitions.map((m, index) => {
     return {
@@ -245,9 +236,24 @@ const App = () => {
   // TransactionTotalAmount, TransactionNetAmount, ItemSoldQty
   // BeverageQty, DiscountAmount, ItemDeletedAmount,
   // DiscountRatio, RefundAmount
-  
 
-
+  const addMetric = () => {
+    const maxNumMetrics = 5;
+    // add a metric if there is space left.
+    if (inputMetrics.length <= maxNumMetrics) {
+      const id = Math.floor(Math.random() * 10000) + 1;
+      const newInputMetrics = [
+        ...inputMetrics,
+        {
+          id: id,
+          alias: "",
+          number: 0,
+          compareType: "",
+        },
+      ];
+      setInputMetrics(newInputMetrics);
+    }
+  };
   const setMetric = (dataValue, index, property) => {
     const newInputMetrics = [];
 
@@ -258,10 +264,12 @@ const App = () => {
     setInputMetrics(newInputMetrics);
   };
 
-  const deleteMetric = (metricId) => {
+  const deleteMetric = (id) => {
     if (inputMetrics.length > 1) {
-      setInputMetrics(inputMetrics.filter((metric) => metric.id !== metricId));
+      setInputMetrics(inputMetrics.filter((metric) => metric.id !== id));
     }
+
+    console.log(inputMetrics);
   };
 
   return (
@@ -314,58 +322,62 @@ const App = () => {
                       onChange={(e, data) => setToHour(data.value)}
                     />
                   </Form.Field>
-                  <Button type="button" >
-                    <Icon name="plus" /> Add Metric
-                  </Button>
-                  {inputMetrics.map((metric, index) => {
-                    
-                    return <Form.Group key={index}>
-                      <Form.Field>
-                        <Dropdown
-                          placeholder= "Metrics"
-                          options={metricDefinitions.map((metric, index) => {
-                            return {
-                              key: index,
-                              text: metric.alias,
-                              value: metric.alias,
-                            };
-                          })}
-                          defaultValue={metric.alias}
-                          onChange={(e, data) =>
-                            setMetric(data.value, index, "alias")
-                          }
-                        />
-                      </Form.Field>
-                      <Form.Field>
-                        <Dropdown
-                          placeholder={"="}
-                          options={compareTypes}
-                          value={metric.compareType}
-                          onChange={(e, data) => {
-                            setMetric(data.value, index, "compareType");
-                          }}
-                        />
-                      </Form.Field>
-                      <Form.Field>
-                        <Input
-                          placeholder={
-                            metric.alias.indexOf("$") !== -1
-                              ? "$0.00"
-                              : metric.alias.toString().indexOf("%") !== -1
-                              ? "%"
-                              : "Quantity"
-                          }
-                          value={metric.number}
-                          onChange={(e, data) => {
-                            setMetric(data.value, index, "number");
-                          }}
-                        />
-                      </Form.Field>
 
-                      <Button type="button" onClick={deleteMetric(index)}>
-                        <Icon name="minus" />{" "}
-                      </Button>
-                    </Form.Group>
+                  {inputMetrics.length < 5 ? (
+                    <Button type="button" onClick={() => addMetric()}>
+                      <Icon name="plus" /> Add Metric
+                    </Button>
+                  ) : null}
+                  {inputMetrics.map((metric, index) => {
+                    return (
+                      <Form.Group key={index}>
+                        <Form.Field>
+                          <Dropdown
+                            placeholder="Metrics"
+                            options={metricDefinitions.map((metric, index) => {
+                              return {
+                                key: index,
+                                text: metric.alias,
+                                value: metric.alias,
+                              };
+                            })}
+                            onChange={(e, data) =>
+                              setMetric(data.value, index, "alias")
+                            }
+                          />
+                        </Form.Field>
+                        <Form.Field>
+                          <Dropdown
+                            placeholder={"="}
+                            options={compareTypes}
+                            onChange={(e, data) => {
+                              setMetric(data.value, index, "compareType");
+                            }}
+                          />
+                        </Form.Field>
+                        <Form.Field>
+                          <Input
+                            placeholder={
+                              metric.alias.indexOf("$") !== -1
+                                ? "$0.00"
+                                : metric.alias.toString().indexOf("%") !== -1
+                                ? "%"
+                                : "Quantity"
+                            }
+                            onChange={(e, data) => {
+                              setMetric(data.value, index, "number");
+                            }}
+                          />
+                        </Form.Field>
+
+                        <Button
+                          type="button"
+                          onClick={() => deleteMetric(metric.id)}
+                        >
+                          <Icon name="minus" />{" "}
+                        </Button>
+                      </Form.Group>
+                    );
                   })}
 
                   <Form.Field>
@@ -382,12 +394,41 @@ const App = () => {
                       Add Criteria
                     </Button>
                   </Form.Field>
-
-                  <Form.Field>
-                    <Button>Delete Criteria option</Button>
-                  </Form.Field>
                 </Form>
               </Segment>
+            </Container>
+
+            <Container>
+              <table class="ui celled table">
+                <thead>
+                  <tr>
+                    <th>Restaurand Id</th>
+                    <th>Transaction Date</th>
+                    <th>Transaction Time</th>
+                    <th>Ticket Number</th>
+                    <th>Transaction Total Amount $</th>
+                    <th>Transaction Net Amount $</th>
+                    <th>Items Sold #</th>
+                    <th>Beverages Sold #</th>
+                    <th>Transaction Discount Amount $</th>
+                    <th>Transaction Discount Ratio %</th>
+                    <th>Item Deleted Amount $</th>
+                    <th>Transaction Refund Amount $</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td data-label="Name">James</td>
+                    <td data-label="Age">24</td>
+                    <td data-label="Job">Engineer</td>
+                  </tr>
+                  <tr>
+                  
+                  </tr>
+                  <tr>
+                  </tr>
+                </tbody>
+              </table>
             </Container>
           </Grid.Column>
         </Grid.Row>
