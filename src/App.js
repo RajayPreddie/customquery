@@ -14,12 +14,12 @@ import {
   Segment,
   Input,
   Dropdown,
-  Table,
+  Pagination,
 } from "semantic-ui-react";
 import {
   Calendar,
   restaurantIdOptions,
-  transactionTimeOptions,
+  dates,
   compareTypes /*, postData, getData, formatValues */,
 } from "./Utility";
 import React, { Component, useEffect, useState } from "react";
@@ -30,42 +30,33 @@ import {
 } from "react-dates";
 import moment from "moment";
 import { ReactDatez } from "react-datez";
+import Table from "./components/Table";
 
 const App = () => {
-  // TODO: style -  only one component per file.
+  // TODO: pagination
+  // TODO: Bar plot
+  // TODO: metric options
+  // TODO: organize components
+  // TODO: clean up the UI
+  // TODO: fix times
 
   // Components:
-  // TODO: At meeting: better options for the calendar.
-  // TODO: make requests to API (Application Programming Interface - connection between computers or computer programs)
-  // Restaurand IDs
+  // TODO: At meeting:  better options for the calendar.
 
   // PROPS: addRestaurant,
 
   const [restaurantIds, setRestaurantIds] = useState([]);
 
   // Calendar
-
   const [dateRange, setDateRange] = useState({
     startDate: null,
     endDate: null,
   });
+
   const { startDate, endDate } = dateRange;
   const [focusedInput, setFocusedInput] = useState();
 
-  // creates times in am/pm
-  const dates = transactionTimeOptions.map((transactionTime) => {
-    const dateTemp = moment(transactionTime.text, "HH:mm").format("hh:mm a");
-    const dateString =
-      dateTemp.substring(0, 1) === "0" ? dateTemp.substring(1) : dateTemp;
-    return {
-      key: transactionTime.key,
-      text: dateString,
-      value: dateString,
-    };
-  });
-
   // Transcation Time Options
-
   const [toHour, setToHour] = useState("5:00 am");
   const [fromHour, setFromHour] = useState("6:00 am");
 
@@ -78,9 +69,17 @@ const App = () => {
       compareType: "",
     },
   ]);
-  console.log(inputMetrics);
+
+  // the results of the search
+  const [results, setResults] = useState([]);
+  console.log(results);
+
+  // active pages
+  const [activePage, setActivePage] = useState(1);
+
+  const itemsPerPage = 10;
   // create date range
-  const makeDateRange = () => {
+  const makeDateRange = (startDate, endDate) => {
     return {
       startDate: moment(startDate).format("YYYY-MM-DDTHH:mm:ss.SSSZ"),
       endDate: moment(endDate).format("YYYY-MM-DDTHH:mm:ss.SSSZ"),
@@ -88,7 +87,7 @@ const App = () => {
   };
 
   // create the range of hours
-  const makeHourRange = () => {
+  const makeHourRange = (fromHour, toHour) => {
     // convert string hours to integers
     const fromHourInt = parseInt(moment(fromHour, "h:mm a").format("H"));
     const toHourInt = parseInt(moment(toHour, "h:mm a").format("H"));
@@ -112,7 +111,7 @@ const App = () => {
   };
 
   // create the metrics criteria
-  const makeMetrics = () => {
+  const makeMetrics = (inputMetrics) => {
     return inputMetrics.map((inputMetric) => {
       return {
         metricCode: metricDefinitions
@@ -121,7 +120,10 @@ const App = () => {
         compareType: compareTypes
           .find((comparison) => comparison.value === inputMetric.compareType)
           .comparetype.toString(),
-        value: parseInt(inputMetric.number),
+        value:
+          inputMetric.alias.indexOf("%") !== -1
+            ? parseInt(inputMetric.number) / 100
+            : parseInt(inputMetric.number),
       };
     });
   };
@@ -150,8 +152,8 @@ const App = () => {
   }
 
   const onSubmit = () => {
-    const hourRange = makeHourRange();
-    const dateRange = makeDateRange();
+    const hourRange = makeHourRange(fromHour, toHour);
+    const dateRange = makeDateRange(startDate, endDate);
 
     const requestData = {
       // restaurandIDs input
@@ -164,7 +166,7 @@ const App = () => {
       fromHour: hourRange.fromHour,
       toHour: hourRange.toHour,
       // Metrics
-      metricCriteria: makeMetrics(),
+      metricCriteria: makeMetrics(inputMetrics),
     };
 
     console.log("Before:", requestData);
@@ -173,7 +175,9 @@ const App = () => {
       "https://customsearchquerytoolapi.azurewebsites.net/Search/Query",
       requestData
     )
-      .then((response) => console.log(response))
+      .then((data) => {
+        setResults(data);
+      })
       .catch((err) => console.log("Error"));
   };
 
@@ -272,6 +276,14 @@ const App = () => {
     console.log(inputMetrics);
   };
 
+  const changePage = (data) => {
+    setActivePage(data.activePage);
+
+    //Page 1: slice 0, 10,
+    // Page 2: slice 10, 20
+    // slice = ((Page # - 1) * numItemsPerPage, activePage * numItemsPerPage)
+  };
+  console.log(activePage);
   return (
     <div className="App">
       <Grid>
@@ -399,36 +411,12 @@ const App = () => {
             </Container>
 
             <Container>
-              <table class="ui celled table">
-                <thead>
-                  <tr>
-                    <th>Restaurand Id</th>
-                    <th>Transaction Date</th>
-                    <th>Transaction Time</th>
-                    <th>Ticket Number</th>
-                    <th>Transaction Total Amount $</th>
-                    <th>Transaction Net Amount $</th>
-                    <th>Items Sold #</th>
-                    <th>Beverages Sold #</th>
-                    <th>Transaction Discount Amount $</th>
-                    <th>Transaction Discount Ratio %</th>
-                    <th>Item Deleted Amount $</th>
-                    <th>Transaction Refund Amount $</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td data-label="Name">James</td>
-                    <td data-label="Age">24</td>
-                    <td data-label="Job">Engineer</td>
-                  </tr>
-                  <tr>
-                  
-                  </tr>
-                  <tr>
-                  </tr>
-                </tbody>
-              </table>
+              <Table
+                results={results}
+                activePage={activePage}
+                onPageChange={changePage}
+                itemsPerPage = {itemsPerPage}
+              />
             </Container>
           </Grid.Column>
         </Grid.Row>

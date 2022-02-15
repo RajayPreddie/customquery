@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import moment from "moment";
 import {
   DateRangePicker,
   SingleDatePicker,
@@ -58,7 +59,7 @@ export const restaurantIdOptions = [
     value: 10,
   },
 ];
-
+// change this to dates, states 6 am to 5 am.
 export const transactionTimeOptions = [
   {
     key: 0,
@@ -183,6 +184,17 @@ export const transactionTimeOptions = [
   },
 ];
 
+
+export const dates = transactionTimeOptions.map((transactionTime) => {
+  const dateTemp = moment(transactionTime.text, "HH:mm").format("hh:mm a");
+  const dateString =
+    dateTemp.substring(0, 1) === "0" ? dateTemp.substring(1) : dateTemp;
+  return {
+    key: transactionTime.key,
+    text: dateString,
+    value: dateString,
+  };
+});
 export const compareTypes = [
   {
     key: 0,
