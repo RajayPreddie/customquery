@@ -33,26 +33,29 @@ import { ReactDatez } from "react-datez";
 import Table from "./components/Table";
 
 const App = () => {
-  // TODO: pagination
+
   // TODO: Bar plot
+
+  // TODO: average number of transactions and average total sales
+  // TODO: each bar of plot is an hour of day, e.g. 9 - 10 pm
+  // TODO: for each business day and each restaurant -> compute total transaction amount and total amount of transactions for each hour of day
+  // TODO: Calc average of hourly totals for each restaurant/business day
   // TODO: metric options
   // TODO: organize components
-  // TODO: clean up the UI
+  // TODO: clean up the UI - pagination, table, background
   // TODO: fix times
 
-  // Components:
-  // TODO: At meeting:  better options for the calendar.
+  // Below are the variables used for storing user input for the restaurant operations data search
 
-  // PROPS: addRestaurant,
-
+  // stores resaurant IDs from the user input
   const [restaurantIds, setRestaurantIds] = useState([]);
 
-  // Calendar
+  // stores the start date and end date from the user input
   const [dateRange, setDateRange] = useState({
     startDate: null,
     endDate: null,
   });
-
+  // setting up parameters for the calendar
   const { startDate, endDate } = dateRange;
   const [focusedInput, setFocusedInput] = useState();
 
@@ -70,15 +73,16 @@ const App = () => {
     },
   ]);
 
-  // the results of the search
+  // stores the results of the users search
   const [results, setResults] = useState([]);
-  console.log(results);
 
-  // active pages
+  // the current page of table data being used
   const [activePage, setActivePage] = useState(1);
 
+  // the number of items on the table page
   const itemsPerPage = 10;
-  // create date range
+
+  // create date range: good
   const makeDateRange = (startDate, endDate) => {
     return {
       startDate: moment(startDate).format("YYYY-MM-DDTHH:mm:ss.SSSZ"),
@@ -86,27 +90,26 @@ const App = () => {
     };
   };
 
-  // create the range of hours
+  // adjust the from or to hour by 24 hours if between 0:00 and 5:00 in the morning
+  const adjustHour = (hour) => {
+    // closing hour is when the restaurant closes
+    // hours per day is used for shifting the morning hours before 5 am by 24 hours
+    const closingHour = 5;
+    const hoursPerDay = 24;
+    const shiftedHour = hour + hoursPerDay;
+    return hour <= closingHour ? shiftedHour : hour;
+  };
+
+  // create the range of hours: good
   const makeHourRange = (fromHour, toHour) => {
     // convert string hours to integers
     const fromHourInt = parseInt(moment(fromHour, "h:mm a").format("H"));
     const toHourInt = parseInt(moment(toHour, "h:mm a").format("H"));
 
-    // 5:00 is when the restaurant shifts end
-    const endShift = 5;
-    // shift the hours between 0:00 and 5:00 by 24 hours
-    const hoursInDay = 24;
-
     // Transaction time range
     return {
-      fromHour:
-        fromHour.indexOf("am") !== -1 && fromHourInt <= endShift
-          ? fromHourInt + hoursInDay
-          : fromHourInt,
-      toHour:
-        toHour.indexOf("am") !== -1 && toHourInt <= endShift
-          ? toHourInt + hoursInDay
-          : toHourInt,
+      fromHour: adjustHour(fromHourInt),
+      toHour: adjustHour(toHourInt),
     };
   };
 
@@ -168,8 +171,6 @@ const App = () => {
       // Metrics
       metricCriteria: makeMetrics(inputMetrics),
     };
-
-    console.log("Before:", requestData);
 
     postData(
       "https://customsearchquerytoolapi.azurewebsites.net/Search/Query",
@@ -235,12 +236,6 @@ const App = () => {
     // this is trick, to trigger useEffect once when page loads.
   }, []);
 
-  // Table columns:
-  // RestaurantId, BusDt, OrderNumber, OrderTime,
-  // TransactionTotalAmount, TransactionNetAmount, ItemSoldQty
-  // BeverageQty, DiscountAmount, ItemDeletedAmount,
-  // DiscountRatio, RefundAmount
-
   const addMetric = () => {
     const maxNumMetrics = 5;
     // add a metric if there is space left.
@@ -272,16 +267,11 @@ const App = () => {
     if (inputMetrics.length > 1) {
       setInputMetrics(inputMetrics.filter((metric) => metric.id !== id));
     }
-
     console.log(inputMetrics);
   };
 
   const changePage = (data) => {
     setActivePage(data.activePage);
-
-    //Page 1: slice 0, 10,
-    // Page 2: slice 10, 20
-    // slice = ((Page # - 1) * numItemsPerPage, activePage * numItemsPerPage)
   };
   console.log(activePage);
   return (
@@ -306,22 +296,22 @@ const App = () => {
                   <Form.Field>
                     <DateRangePicker
                       isOutsideRange={() => false}
-                      startDate={startDate} // momentPropTypes.momentObj or null,
-                      startDateId="your_unique_start_date_id" // PropTypes.string.isRequired,
-                      endDate={endDate} // momentPropTypes.momentObj or null,
-                      endDateId="your_unique_end_date_id" // PropTypes.string.isRequired,
+                      startDate={startDate} 
+                      startDateId="your_unique_start_date_id"
+                      endDate={endDate} 
+                      endDateId="your_unique_end_date_id" 
                       onDatesChange={({ startDate, endDate }) =>
                         onDatesChange(startDate, endDate)
-                      } // PropTypes.func.isRequired,
-                      focusedInput={focusedInput} // PropTypes.oneOf([START_DATE, END_DATE]) or null,
+                      } 
+                      focusedInput={focusedInput} 
                       onFocusChange={(focusedInput) =>
                         onFocusChange(focusedInput)
-                      } // PropTypes.func.isRequired,
+                      } 
                     />
                     {"       "}
                     <Label> Transactions From </Label>
                     <Dropdown
-                      scrolling
+                      scrolling 
                       options={dates}
                       defaultValue={fromHour.toString()}
                       onChange={(e, data) => setFromHour(data.value)}
@@ -335,12 +325,16 @@ const App = () => {
                     />
                   </Form.Field>
 
-                  {inputMetrics.length < 5 ? (
+                  {// make function for checking if max metrics reached
+                  inputMetrics.length < 5 ? (
                     <Button type="button" onClick={() => addMetric()}>
                       <Icon name="plus" /> Add Metric
                     </Button>
-                  ) : null}
-                  {inputMetrics.map((metric, index) => {
+                  ) : null} 
+
+                  { //consider cleaning up
+                  
+                  inputMetrics.map((metric, index) => {
                     return (
                       <Form.Group key={index}>
                         <Form.Field>
@@ -396,16 +390,6 @@ const App = () => {
                     <Form.Field></Form.Field>
                     <Button type="submit"> Submit </Button>
                   </Form.Field>
-                  <Form.Field>
-                    <Button
-                      type="button"
-                      // onClick={(event, data) => {
-                      //   // setMetricCriteria(); // array rerenders every time we add something
-                      // }}
-                    >
-                      Add Criteria
-                    </Button>
-                  </Form.Field>
                 </Form>
               </Segment>
             </Container>
@@ -415,7 +399,7 @@ const App = () => {
                 results={results}
                 activePage={activePage}
                 onPageChange={changePage}
-                itemsPerPage = {itemsPerPage}
+                itemsPerPage={itemsPerPage}
               />
             </Container>
           </Grid.Column>

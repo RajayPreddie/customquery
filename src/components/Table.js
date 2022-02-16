@@ -56,8 +56,10 @@ export const Table = ({ results, activePage, onPageChange, itemsPerPage }) => {
                   <td>{moment(result.busDt).format("MM/DD/YYYY")}</td>
                   <td>{moment(result.orderTime).format("h:mm a")}</td>
                   <td>{result.orderNumber}</td>
-                  <td>${result.totalAmount}</td>
-                  <td>${result.netAmount}</td>
+                  <td>${(Math.round(result.totalAmount * 100) / 100).toFixed(
+                      2)} </td>
+                  <td>${(Math.round(result.netAmount * 100) / 100).toFixed(
+                      2)}</td>
                   <td>{result.itemSoldQty}</td>
                   <td>{result.beverageQty}</td>
                   <td>${result.discountAmount}</td>
