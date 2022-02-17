@@ -74,7 +74,7 @@ export const Table = ({ results, activePage, onPageChange, itemsPerPage }) => {
                 </tr>
               );
             })} 
-        </tbody>: <header> Nothing to display</header>
+        </tbody>: null
 }
       </table>
     </>

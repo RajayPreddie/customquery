@@ -185,14 +185,14 @@ export const transactionTimeOptions = [
 ];
 
 
-export const dates = transactionTimeOptions.map((transactionTime) => {
-  const dateTemp = moment(transactionTime.text, "HH:mm").format("hh:mm a");
-  const dateString =
-    dateTemp.substring(0, 1) === "0" ? dateTemp.substring(1) : dateTemp;
+export const times = transactionTimeOptions.map((transactionTime) => {
+  const timeTemp = moment(transactionTime.text, "HH:mm").format("hh:mm a");
+  const timeString =
+    timeTemp.substring(0, 1) === "0" ? timeTemp.substring(1) : timeTemp;
   return {
     key: transactionTime.key,
-    text: dateString,
-    value: dateString,
+    text: timeString,
+    value: timeString,
   };
 });
 export const compareTypes = [

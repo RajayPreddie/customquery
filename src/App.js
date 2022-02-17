@@ -5,6 +5,18 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "react-dates/initialize";
 import "react-dates/lib/css/_datepicker.css";
 import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  TimeScale,
+} from "chart.js";
+import { Bar } from "react-chartjs-2";
+
+import {
   Icon,
   Label,
   Button,
@@ -19,7 +31,7 @@ import {
 import {
   Calendar,
   restaurantIdOptions,
-  dates,
+  times,
   compareTypes /*, postData, getData, formatValues */,
 } from "./Utility";
 import React, { Component, useEffect, useState } from "react";
@@ -33,7 +45,6 @@ import { ReactDatez } from "react-datez";
 import Table from "./components/Table";
 
 const App = () => {
-
   // TODO: Bar plot
 
   // TODO: average number of transactions and average total sales
@@ -45,6 +56,15 @@ const App = () => {
   // TODO: clean up the UI - pagination, table, background
   // TODO: fix times
 
+  // setting up the bar plot
+  ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend
+  );
   // Below are the variables used for storing user input for the restaurant operations data search
 
   // stores resaurant IDs from the user input
@@ -66,7 +86,6 @@ const App = () => {
   // Metric Options
   const [inputMetrics, setInputMetrics] = useState([
     {
-      id: 1,
       alias: "",
       number: 0,
       compareType: "",
@@ -82,6 +101,9 @@ const App = () => {
   // the number of items on the table page
   const itemsPerPage = 10;
 
+  // stores the average sales for each hour for each business day
+  const [resultAvgs, setResultAvgs] = useState([]);
+
   // create date range: good
   const makeDateRange = (startDate, endDate) => {
     return {
@@ -92,24 +114,24 @@ const App = () => {
 
   // adjust the from or to hour by 24 hours if between 0:00 and 5:00 in the morning
   const adjustHour = (hour) => {
+    // convert string hours to integers
+    const intHour = parseInt(moment(hour, "h:mm a").format("H"));
+
     // closing hour is when the restaurant closes
     // hours per day is used for shifting the morning hours before 5 am by 24 hours
     const closingHour = 5;
     const hoursPerDay = 24;
-    const shiftedHour = hour + hoursPerDay;
-    return hour <= closingHour ? shiftedHour : hour;
+    const shiftedHour = intHour + hoursPerDay;
+    return intHour <= closingHour ? shiftedHour : intHour;
   };
 
+  // convert time to
   // create the range of hours: good
   const makeHourRange = (fromHour, toHour) => {
-    // convert string hours to integers
-    const fromHourInt = parseInt(moment(fromHour, "h:mm a").format("H"));
-    const toHourInt = parseInt(moment(toHour, "h:mm a").format("H"));
-
     // Transaction time range
     return {
-      fromHour: adjustHour(fromHourInt),
-      toHour: adjustHour(toHourInt),
+      fromHour: adjustHour(fromHour),
+      toHour: adjustHour(toHour),
     };
   };
 
@@ -180,6 +202,8 @@ const App = () => {
         setResults(data);
       })
       .catch((err) => console.log("Error"));
+
+    calcAvg(results);
   };
 
   // set the date ranges onDatesChange
@@ -240,11 +264,9 @@ const App = () => {
     const maxNumMetrics = 5;
     // add a metric if there is space left.
     if (inputMetrics.length <= maxNumMetrics) {
-      const id = Math.floor(Math.random() * 10000) + 1;
       const newInputMetrics = [
         ...inputMetrics,
         {
-          id: id,
           alias: "",
           number: 0,
           compareType: "",
@@ -263,17 +285,167 @@ const App = () => {
     setInputMetrics(newInputMetrics);
   };
 
-  const deleteMetric = (id) => {
+  const deleteMetric = (index) => {
     if (inputMetrics.length > 1) {
-      setInputMetrics(inputMetrics.filter((metric) => metric.id !== id));
+      setInputMetrics(inputMetrics.filter((metric, i) => i !== index));
     }
     console.log(inputMetrics);
   };
-
+  /**
+   * @brief
+   */
   const changePage = (data) => {
     setActivePage(data.activePage);
   };
-  console.log(activePage);
+
+  // console.log(inputMetrics);
+
+  // BAR PLOT
+  // labels: use dates for the labels
+  // create time range: if 6 am to 5 am, 23 separate hour increments. Make method to calc difference
+  // For nowing what time range a thing is in: just use the first number and am/pm
+  // ex- every time between 5 and 6 will start with 5
+  // for 6 am to 5 am, map through every each one, getting totals for each hour
+  // divide each total by length of results.
+  // store the averages for each hour in a key value object.
+  // if a certain key is not there, just add it into the object with a 0 initial value.
+
+  // have an object that holds total transactions and total sales for each hour
+
+  // calculating the average:
+  // divide by the number of days
+  // for 5 pm to 6 pm, get the total transactions for that, divide by number of days
+
+  const findNumDays = (startDate, endDate) => {
+    // bar plot will show a particular business day "YYYY-MM-DDTHH:mm:ss.SSSZ"
+    /*     console.log(fromHour)
+    const tempStartDate = moment(startDate).format("YYYY-MM-DD") + "T" + moment(fromHour,"hh:mm a").format("HH:mm:ss.SSSZ")
+    const tempEndDate = moment(endDate).format("YYYY-MM-DD") + "T" + moment(toHour,"hh:mm a").format("HH:mm:ss.SSSZ")
+    console.log(tempStartDate)
+    const start = moment(tempStartDate); //todays date
+    const end = moment(tempEndDate); // another date */
+    const start = moment(startDate);
+    const end = moment(endDate);
+    const duration = moment.duration(end.diff(start));
+    const days = duration.asDays() + 1;
+    // console.log(days);
+
+    return days;
+  };
+  /**
+   * @brief For each business day and restaurant, calculate the averge sales
+   *  and number of transactions for each hour
+   */
+  const calcAvg = (results) => {
+    // storing the number of days between start and end date
+    const numDays = findNumDays(startDate, endDate);
+
+    // data structure to store the averages.
+    const newResultAvgs = [];
+
+    // look at each transaction and calculate the average sales and number of transactions
+    // for each day and each hour
+    results.map((result) => {
+      // get the transactions order time
+      const time = moment(result["orderTime"]).format("h:00 a");
+      // find the average number of transactions and sales for each time
+      if (time in newResultAvgs) {
+        newResultAvgs[time.toString()].avgNumTransactions +=
+          1 / (restaurantIds.length * numDays);
+        newResultAvgs[time.toString()].avgSales +=
+          result.totalAmount / (restaurantIds.length * numDays);
+      } else {
+        newResultAvgs[time.toString()] = {
+          avgNumTransactions: 1 / (restaurantIds.length * numDays),
+          avgSales: result.totalAmount / (restaurantIds.length * numDays),
+        };
+      }
+    });
+
+    // update the resulting averages
+    setResultAvgs(newResultAvgs);
+  };
+
+  ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend
+  );
+
+  // export from Utility
+  const options = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: "top",
+      },
+      title: {
+        display: true,
+        text: "Restaurant Statistics",
+      },
+    },
+  };
+  // export from utility
+  /*   const labels = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+  ];
+  const data2 = {
+    labels,
+    datasets: [
+      {
+        label: "Dataset 1",
+        data: labels.map(() => 1),
+        backgroundColor: "rgba(255, 99, 132, 0.5)",
+      },
+      {
+        label: "Dataset 2",
+        data: labels.map(() => 1),
+        backgroundColor: "rgba(53, 162, 235, 0.5)",
+      },
+    ],
+  };
+   */
+
+  const labels = times.map((time) => time.text);
+  const data = {
+    labels,
+    datasets: [
+      {
+        label: "Average Number of Transactions",
+        data: labels.map((label) => {
+          if (Object.keys(resultAvgs).length > 0 && label in resultAvgs) {
+            return Number(resultAvgs[label].avgNumTransactions);
+          } else {
+            return 0;
+          }
+        }),
+        backgroundColor: "rgba(255, 99, 132, 0.5)",
+      },
+      {
+        label: "Average Total Sales",
+        data: labels.map((label) => {
+          if (Object.keys(resultAvgs).length > 0 && label in resultAvgs) {
+            return Number(resultAvgs[label].avgSales);
+          } else {
+            return 0;
+          }
+        }),
+        backgroundColor: "rgba(53, 162, 235, 0.5)",
+      },
+    ],
+  };
+  console.log(data);
+  console.log(resultAvgs);
+
   return (
     <div className="App">
       <Grid>
@@ -296,104 +468,112 @@ const App = () => {
                   <Form.Field>
                     <DateRangePicker
                       isOutsideRange={() => false}
-                      startDate={startDate} 
+                      startDate={startDate}
                       startDateId="your_unique_start_date_id"
-                      endDate={endDate} 
-                      endDateId="your_unique_end_date_id" 
+                      endDate={endDate}
+                      endDateId="your_unique_end_date_id"
                       onDatesChange={({ startDate, endDate }) =>
                         onDatesChange(startDate, endDate)
-                      } 
-                      focusedInput={focusedInput} 
+                      }
+                      focusedInput={focusedInput}
                       onFocusChange={(focusedInput) =>
                         onFocusChange(focusedInput)
-                      } 
+                      }
                     />
                     {"       "}
                     <Label> Transactions From </Label>
                     <Dropdown
-                      scrolling 
-                      options={dates}
-                      defaultValue={fromHour.toString()}
+                      scrolling
+                      options={times}
+                      value={fromHour.toString()}
                       onChange={(e, data) => setFromHour(data.value)}
                     />
                     <Label> To </Label>
                     <Dropdown
                       scrolling
-                      options={dates}
-                      defaultValue={toHour.toString()}
+                      options={times}
+                      value={toHour.toString()}
                       onChange={(e, data) => setToHour(data.value)}
                     />
                   </Form.Field>
 
-                  {// make function for checking if max metrics reached
-                  inputMetrics.length < 5 ? (
-                    <Button type="button" onClick={() => addMetric()}>
-                      <Icon name="plus" /> Add Metric
-                    </Button>
-                  ) : null} 
+                  {
+                    // make function for checking if max metrics reached
+                    inputMetrics.length < 5 ? (
+                      <Button type="button" onClick={() => addMetric()}>
+                        <Icon name="plus" /> Add Metric
+                      </Button>
+                    ) : null
+                  }
 
-                  { //consider cleaning up
-                  
-                  inputMetrics.map((metric, index) => {
-                    return (
-                      <Form.Group key={index}>
-                        <Form.Field>
-                          <Dropdown
-                            placeholder="Metrics"
-                            options={metricDefinitions.map((metric, index) => {
-                              return {
-                                key: index,
-                                text: metric.alias,
-                                value: metric.alias,
-                              };
-                            })}
-                            onChange={(e, data) =>
-                              setMetric(data.value, index, "alias")
-                            }
-                          />
-                        </Form.Field>
-                        <Form.Field>
-                          <Dropdown
-                            placeholder={"="}
-                            options={compareTypes}
-                            onChange={(e, data) => {
-                              setMetric(data.value, index, "compareType");
-                            }}
-                          />
-                        </Form.Field>
-                        <Form.Field>
-                          <Input
-                            placeholder={
-                              metric.alias.indexOf("$") !== -1
-                                ? "$0.00"
-                                : metric.alias.toString().indexOf("%") !== -1
-                                ? "%"
-                                : "Quantity"
-                            }
-                            onChange={(e, data) => {
-                              setMetric(data.value, index, "number");
-                            }}
-                          />
-                        </Form.Field>
+                  {
+                    //consider cleaning up
 
-                        <Button
-                          type="button"
-                          onClick={() => deleteMetric(metric.id)}
-                        >
-                          <Icon name="minus" />{" "}
-                        </Button>
-                      </Form.Group>
-                    );
-                  })}
+                    inputMetrics.map((metric, index) => {
+                      return (
+                        <Form.Group key={index}>
+                          <Form.Field>
+                            <Dropdown
+                              placeholder="Metrics"
+                              value={inputMetrics[index]["alias"]}
+                              options={metricDefinitions.map((metricDef, i) => {
+                                return {
+                                  key: i,
+                                  text: metricDef.alias,
+                                  value: metricDef.alias,
+                                };
+                              })}
+                              onChange={(e, data) =>
+                                setMetric(data.value, index, "alias")
+                              }
+                            />
+                          </Form.Field>
+                          <Form.Field>
+                            <Dropdown
+                              placeholder={"="}
+                              options={compareTypes}
+                              value={inputMetrics[index]["c"]}
+                              onChange={(e, data) => {
+                                setMetric(data.value, index, "compareType");
+                              }}
+                            />
+                          </Form.Field>
+                          <Form.Field>
+                            <Input
+                              placeholder={
+                                metric.alias.indexOf("$") !== -1
+                                  ? "$0.00"
+                                  : metric.alias.toString().indexOf("%") !== -1
+                                  ? "%"
+                                  : "Quantity"
+                              }
+                              value={inputMetrics[index]["number"]}
+                              onChange={(e, data) => {
+                                setMetric(data.value, index, "number");
+                              }}
+                            />
+                          </Form.Field>
+
+                          <Button
+                            type="button"
+                            onClick={() => deleteMetric(index)}
+                          >
+                            <Icon name="minus" />{" "}
+                          </Button>
+                        </Form.Group>
+                      );
+                    })
+                  }
 
                   <Form.Field>
                     <Form.Field></Form.Field>
                     <Button type="submit"> Submit </Button>
                   </Form.Field>
+                  <Bar options={options} data={data} />
                 </Form>
               </Segment>
             </Container>
-
+            
             <Container>
               <Table
                 results={results}
