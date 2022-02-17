@@ -17,11 +17,16 @@ import {
 import { Bar } from "react-chartjs-2";
 
 import {
+  Accordion,
+  Header,
   Icon,
   Label,
   Button,
+  Menu,
+  Message,
   Form,
   Grid,
+  Table,
   Container,
   Segment,
   Input,
@@ -32,7 +37,8 @@ import {
   Calendar,
   restaurantIdOptions,
   times,
-  compareTypes /*, postData, getData, formatValues */,
+  compareTypes,
+  tableHeaders /*, postData, getData, formatValues */,
 } from "./Utility";
 import React, { Component, useEffect, useState } from "react";
 import {
@@ -40,9 +46,10 @@ import {
   SingleDatePicker,
   DayPickerRangeController,
 } from "react-dates";
+import "./react_dates_overrides.css";
 import moment from "moment";
 import { ReactDatez } from "react-datez";
-import Table from "./components/Table";
+import Accordians from "./components/Accordians.js";
 
 const App = () => {
   // TODO: Bar plot
@@ -103,6 +110,16 @@ const App = () => {
 
   // stores the average sales for each hour for each business day
   const [resultAvgs, setResultAvgs] = useState([]);
+
+  // Accordian active page
+  const [activeIndex, setActiveIndex] = useState({ activeIndex: 0 });
+
+  const handleClick = (e, titleProps) => {
+    const { index } = titleProps;
+    const newIndex = activeIndex === index ? -1 : index;
+
+    setActiveIndex({ activeIndex: newIndex });
+  };
 
   // create date range: good
   const makeDateRange = (startDate, endDate) => {
@@ -200,10 +217,9 @@ const App = () => {
     )
       .then((data) => {
         setResults(data);
+        calcAvg(data);
       })
       .catch((err) => console.log("Error"));
-
-    calcAvg(results);
   };
 
   // set the date ranges onDatesChange
@@ -388,32 +404,6 @@ const App = () => {
       },
     },
   };
-  // export from utility
-  /*   const labels = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-  ];
-  const data2 = {
-    labels,
-    datasets: [
-      {
-        label: "Dataset 1",
-        data: labels.map(() => 1),
-        backgroundColor: "rgba(255, 99, 132, 0.5)",
-      },
-      {
-        label: "Dataset 2",
-        data: labels.map(() => 1),
-        backgroundColor: "rgba(53, 162, 235, 0.5)",
-      },
-    ],
-  };
-   */
 
   const labels = times.map((time) => time.text);
   const data = {
@@ -423,7 +413,7 @@ const App = () => {
         label: "Average Number of Transactions",
         data: labels.map((label) => {
           if (Object.keys(resultAvgs).length > 0 && label in resultAvgs) {
-            return Number(resultAvgs[label].avgNumTransactions);
+            return Number(Math.floor(resultAvgs[label].avgNumTransactions));
           } else {
             return 0;
           }
@@ -431,10 +421,10 @@ const App = () => {
         backgroundColor: "rgba(255, 99, 132, 0.5)",
       },
       {
-        label: "Average Total Sales",
+        label: "Average Total Sales($)",
         data: labels.map((label) => {
           if (Object.keys(resultAvgs).length > 0 && label in resultAvgs) {
-            return Number(resultAvgs[label].avgSales);
+            return Number(Math.round(resultAvgs[label].avgSales * 100) / 100).toFixed(2);
           } else {
             return 0;
           }
@@ -443,17 +433,24 @@ const App = () => {
       },
     ],
   };
-  console.log(data);
-  console.log(resultAvgs);
 
   return (
     <div className="App">
-      <Grid>
+      <Grid padded>
         <Grid.Row>
           <Grid.Column>
             <Container>
-              <Segment>
-                <Form onSubmit={(e, data) => onSubmit()}>
+            
+              <Segment padded>
+              <Header as="h1" >
+                  {" "}
+                  Custom Query Search Tool
+                </Header>
+              
+              
+               
+                <Form onSubmit={(e, data) => onSubmit()} size = "medium">
+                  {'                        '}
                   <Form.Field>
                     <Dropdown
                       placeholder="Restaurant IDs"
@@ -480,6 +477,8 @@ const App = () => {
                         onFocusChange(focusedInput)
                       }
                     />
+
+                    <Icon name="calendar" size="large" />
                     {"       "}
                     <Label> Transactions From </Label>
                     <Dropdown
@@ -498,48 +497,59 @@ const App = () => {
                   </Form.Field>
 
                   {
-                    // make function for checking if max metrics reached
-                    inputMetrics.length < 5 ? (
-                      <Button type="button" onClick={() => addMetric()}>
-                        <Icon name="plus" /> Add Metric
-                      </Button>
-                    ) : null
-                  }
-
-                  {
                     //consider cleaning up
 
                     inputMetrics.map((metric, index) => {
                       return (
-                        <Form.Group key={index}>
-                          <Form.Field>
-                            <Dropdown
-                              placeholder="Metrics"
-                              value={inputMetrics[index]["alias"]}
-                              options={metricDefinitions.map((metricDef, i) => {
-                                return {
-                                  key: i,
-                                  text: metricDef.alias,
-                                  value: metricDef.alias,
-                                };
-                              })}
-                              onChange={(e, data) =>
-                                setMetric(data.value, index, "alias")
-                              }
-                            />
-                          </Form.Field>
-                          <Form.Field>
-                            <Dropdown
-                              placeholder={"="}
-                              options={compareTypes}
-                              value={inputMetrics[index]["c"]}
-                              onChange={(e, data) => {
-                                setMetric(data.value, index, "compareType");
-                              }}
-                            />
-                          </Form.Field>
+                        <Form.Group key={index} widths="equal">
+                          {inputMetrics.length > 1 ? (
+                            <Button
+                              color="red"
+                              type="button"
+                              onClick={() => deleteMetric(index)}
+                            >
+                              <Icon name="delete" />{" "}
+                            </Button>
+                          ) : null}
+                          <div className="ui fluid selection dropdown">
+                            <Form.Field>
+                              <Dropdown
+                                fluid
+                                placeholder="Metrics"
+                                value={inputMetrics[index]["alias"]}
+                                options={metricDefinitions.map(
+                                  (metricDef, i) => {
+                                    return {
+                                      key: i,
+                                      text: metricDef.alias,
+                                      value: metricDef.alias,
+                                    };
+                                  }
+                                )}
+                                onChange={(e, data) =>
+                                  setMetric(data.value, index, "alias")
+                                }
+                              />
+                            </Form.Field>
+                            {"  "}
+                          </div>
+
+                          <div className="ui fluid selection dropdown">
+                            <Form.Field>
+                              <Dropdown
+                                fluid
+                                placeholder={"Compare Type"}
+                                options={compareTypes}
+                                value={inputMetrics[index]["c"]}
+                                onChange={(e, data) => {
+                                  setMetric(data.value, index, "compareType");
+                                }}
+                              />
+                            </Form.Field>
+                          </div>
                           <Form.Field>
                             <Input
+                              fluid
                               placeholder={
                                 metric.alias.indexOf("$") !== -1
                                   ? "$0.00"
@@ -553,38 +563,47 @@ const App = () => {
                               }}
                             />
                           </Form.Field>
-
-                          <Button
-                            type="button"
-                            onClick={() => deleteMetric(index)}
-                          >
-                            <Icon name="minus" />{" "}
-                          </Button>
                         </Form.Group>
                       );
                     })
                   }
-
+                  {
+                    // make function for checking if max metrics reached
+                    inputMetrics.length < 5 ? (
+                      <Button
+                        color="green"
+                        type="button"
+                        onClick={() => addMetric()}
+                      >
+                        <Icon name="plus" /> Add Metric
+                      </Button>
+                    ) : null
+                  }
                   <Form.Field>
                     <Form.Field></Form.Field>
-                    <Button type="submit"> Submit </Button>
+                    <Button color="blue" type="submit">
+                      {" "}
+                      Submit{" "}
+                    </Button>
                   </Form.Field>
-                  <Bar options={options} data={data} />
                 </Form>
               </Segment>
-            </Container>
-            
-            <Container>
-              <Table
-                results={results}
-                activePage={activePage}
-                onPageChange={changePage}
-                itemsPerPage={itemsPerPage}
-              />
             </Container>
           </Grid.Column>
         </Grid.Row>
       </Grid>
+
+      <Container>
+        <Accordians
+          plotOptions={options}
+          plotData={data}
+          results={results}
+          tableHeaders={tableHeaders}
+          activePage={activePage}
+          onPageChange={changePage}
+          itemsPerPage={itemsPerPage}
+        />
+      </Container>
     </div>
   );
 };

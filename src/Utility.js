@@ -184,7 +184,6 @@ export const transactionTimeOptions = [
   },
 ];
 
-
 export const times = transactionTimeOptions.map((transactionTime) => {
   const timeTemp = moment(transactionTime.text, "HH:mm").format("hh:mm a");
   const timeString =
@@ -195,43 +194,57 @@ export const times = transactionTimeOptions.map((transactionTime) => {
     value: timeString,
   };
 });
+
+export const tableHeaders = [
+  "Restaurand Id",
+  "Transaction Date",
+  "Transaction Time",
+  "Ticket Number",
+  "Transaction Total Amount $",
+  "Transaction Net Amount $",
+  "Items Sold #",
+  "Beverages Sold #",
+  "Transaction Discount Amount $",
+  "Transaction Discount Ratio %",
+  "Item Deleted Amount $",
+  "Transaction Refund Amount $",
+];
+
+
+
+
 export const compareTypes = [
   {
     key: 0,
     text: "<=",
     comparetype: "LessThanOrEqual",
     value: "<=",
-    
   },
   {
     key: 1,
     text: "<",
     comparetype: "LessThan",
     value: "<",
-    
   },
   {
     key: 2,
     text: "=",
     comparetype: "Equal",
     value: "=",
-    
   },
   {
     key: 3,
     text: ">",
     comparetype: "GreaterThan",
     value: ">",
-    
   },
   {
     key: 4,
     text: ">=",
     comparetype: "GreaterThanOrEqual",
     value: ">=",
-  }
+  },
 ];
-
 
 export class Calendar extends Component {
   constructor(props) {

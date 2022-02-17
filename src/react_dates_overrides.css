@@ -1,0 +1,95 @@
+
+.CalendarDay__selected_span  {
+  background: #86C6F4; 
+  color: white; 
+  border: 1px solid grey; 
+}
+
+
+.CalendarDay__selected {
+  background: #86C6F4;
+  color: white;
+}
+
+
+.CalendarDay__selected:hover {
+  background: #86C6F4;
+  color: white;
+}
+
+
+.PresetDateRangePicker_button {
+  position: relative;
+  height: 100%;
+  text-align: center;
+  background: 0 0;
+  border: 2px solid #86C6F4;
+  color: #86C6F4;
+  padding: 4px 12px;
+  margin-right: 8px;
+  font: inherit;
+  font-weight: 700;
+  line-height: normal;
+  overflow: visible;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+  cursor: pointer
+}
+
+.PresetDateRangePicker_button__selected {
+  color: #fff;
+  background: #86C6F4
+}
+
+.DayPickerKeyboardShortcuts_show__bottomRight::before {
+  border-top: 26px solid transparent;
+  border-right: 33px solid #86C6F4;
+  bottom: 0;
+  right: 0
+}
+.DayPickerKeyboardShortcuts_show__bottomRight:hover::before {
+  border-right: 33px solid #86C6F4
+}
+.DayPickerKeyboardShortcuts_show__topRight {
+  top: 0;
+  right: 0
+}
+.DayPickerKeyboardShortcuts_show__topRight::before {
+  border-bottom: 26px solid transparent;
+  border-right: 33px solid #86C6F4;
+  top: 0;
+  right: 0
+}
+.DayPickerKeyboardShortcuts_show__topRight:hover::before {
+  border-right: 33px solid #86C6F4
+}
+
+.CalendarDay__selected_span {
+  background: #90E0EF;
+  border: 1px double #90E0EF;
+  color: #fff
+}
+.CalendarDay__selected_span:active,
+.CalendarDay__selected_span:hover {
+  background: #90E0EF;
+  border: 1px double #90E0EF;
+  color: #fff
+}
+.CalendarDay__selected,
+.CalendarDay__selected:active,
+.CalendarDay__selected:hover {
+  background: #86C6F4;
+  border: 1px double #86C6F4;
+  color: #fff
+}
+.CalendarDay__hovered_span,
+.CalendarDay__hovered_span:hover {
+  background: #90E0EF;
+  border: 1px double #90E0EF;
+  color: #86C6F4
+}
+.CalendarDay__hovered_span:active {
+  background: #90E0EF;
+  border: 1px double #90E0EF;
+  color: #86C6F4
+}
