@@ -94,7 +94,7 @@ const App = () => {
   const [inputMetrics, setInputMetrics] = useState([
     {
       alias: "",
-      number: 0,
+      number: "",
       compareType: "",
     },
   ]);
@@ -111,14 +111,18 @@ const App = () => {
   // stores the average sales for each hour for each business day
   const [resultAvgs, setResultAvgs] = useState([]);
 
-  // Accordian active page
-  const [activeIndex, setActiveIndex] = useState({ activeIndex: 0 });
+  const checkMetrics = () => {
+    for (let i = 0; i < inputMetrics.length; ++i) {
+      if (
+        inputMetrics[i].alias === "" ||
+        inputMetrics[i].number === "" ||
+        inputMetrics[i].compareType === ""
+      ) {
+        return false;
+      }
+    }
 
-  const handleClick = (e, titleProps) => {
-    const { index } = titleProps;
-    const newIndex = activeIndex === index ? -1 : index;
-
-    setActiveIndex({ activeIndex: newIndex });
+    return true;
   };
 
   // create date range: good
@@ -154,20 +158,24 @@ const App = () => {
 
   // create the metrics criteria
   const makeMetrics = (inputMetrics) => {
-    return inputMetrics.map((inputMetric) => {
-      return {
-        metricCode: metricDefinitions
-          .find((metric) => metric.alias === inputMetric.alias)
-          .metricCode.toString(),
-        compareType: compareTypes
-          .find((comparison) => comparison.value === inputMetric.compareType)
-          .comparetype.toString(),
-        value:
-          inputMetric.alias.indexOf("%") !== -1
-            ? parseInt(inputMetric.number) / 100
-            : parseInt(inputMetric.number),
-      };
-    });
+    return checkMetrics()
+      ? inputMetrics.map((inputMetric) => {
+          return {
+            metricCode: metricDefinitions
+              .find((metric) => metric.alias === inputMetric.alias)
+              .metricCode.toString(),
+            compareType: compareTypes
+              .find(
+                (comparison) => comparison.value === inputMetric.compareType
+              )
+              .comparetype.toString(),
+            value:
+              inputMetric.alias.indexOf("%") !== -1
+                ? parseInt(inputMetric.number) / 100
+                : parseInt(inputMetric.number),
+          };
+        })
+      : [];
   };
 
   async function postData(url = "", requestData) {
@@ -284,7 +292,7 @@ const App = () => {
         ...inputMetrics,
         {
           alias: "",
-          number: 0,
+          number: "",
           compareType: "",
         },
       ];
@@ -424,7 +432,9 @@ const App = () => {
         label: "Average Total Sales($)",
         data: labels.map((label) => {
           if (Object.keys(resultAvgs).length > 0 && label in resultAvgs) {
-            return Number(Math.round(resultAvgs[label].avgSales * 100) / 100).toFixed(2);
+            return Number(
+              Math.round(resultAvgs[label].avgSales * 100) / 100
+            ).toFixed(2);
           } else {
             return 0;
           }
@@ -440,17 +450,24 @@ const App = () => {
         <Grid.Row>
           <Grid.Column>
             <Container>
-            
               <Segment padded>
-              <Header as="h1" >
+                <Header as="h1">
                   {" "}
                   Custom Query Search Tool
+                
                 </Header>
-              
-              
-               
-                <Form onSubmit={(e, data) => onSubmit()} size = "medium">
-                  {'                        '}
+                <Header as = "h6">  
+                 
+                <Message size = "mini">
+                    <Message.Header>How to use this?</Message.Header>
+                    <p>
+                      Enter inputs below for restaurant IDs, dates, transaction times, and metrics
+                      to query data from the API. *The API contains data for dates between 10/1/2021 and 10/26/2021
+                    </p>
+                  </Message></Header>
+
+                <Form onSubmit={(e, data) => onSubmit()} size="small">
+                  {"                        "}
                   <Form.Field>
                     <Dropdown
                       placeholder="Restaurant IDs"
@@ -480,14 +497,14 @@ const App = () => {
 
                     <Icon name="calendar" size="large" />
                     {"       "}
-                    <Label> Transactions From </Label>
+                    <Label color="blue"> Transactions From </Label>
                     <Dropdown
                       scrolling
                       options={times}
                       value={fromHour.toString()}
                       onChange={(e, data) => setFromHour(data.value)}
                     />
-                    <Label> To </Label>
+                    <Label color="blue"> To </Label>
                     <Dropdown
                       scrolling
                       options={times}
@@ -511,42 +528,43 @@ const App = () => {
                               <Icon name="delete" />{" "}
                             </Button>
                           ) : null}
-                          <div className="ui fluid selection dropdown">
-                            <Form.Field>
-                              <Dropdown
-                                fluid
-                                placeholder="Metrics"
-                                value={inputMetrics[index]["alias"]}
-                                options={metricDefinitions.map(
-                                  (metricDef, i) => {
-                                    return {
-                                      key: i,
-                                      text: metricDef.alias,
-                                      value: metricDef.alias,
-                                    };
-                                  }
-                                )}
-                                onChange={(e, data) =>
-                                  setMetric(data.value, index, "alias")
-                                }
-                              />
-                            </Form.Field>
-                            {"  "}
-                          </div>
 
-                          <div className="ui fluid selection dropdown">
-                            <Form.Field>
-                              <Dropdown
-                                fluid
-                                placeholder={"Compare Type"}
-                                options={compareTypes}
-                                value={inputMetrics[index]["c"]}
-                                onChange={(e, data) => {
-                                  setMetric(data.value, index, "compareType");
-                                }}
-                              />
-                            </Form.Field>
-                          </div>
+                          <Form.Field>
+                            <Dropdown
+                              button
+                              fluid
+                              placeholder="Metrics"
+                              value={inputMetrics[index]["alias"]}
+                              scrolling
+                              options={metricDefinitions.map((metricDef, i) => {
+                                return {
+                                  key: i,
+                                  text: metricDef.alias,
+                                  value: metricDef.alias,
+                                };
+                              })}
+                              onChange={(e, data) =>
+                                setMetric(data.value, index, "alias")
+                              }
+                            />
+                          </Form.Field>
+
+                          {"  "}
+
+                          <Form.Field>
+                            <Dropdown
+                              button
+                              fluid
+                              placeholder={"Compare Type"}
+                              scrolling
+                              options={compareTypes}
+                              value={inputMetrics[index]["c"]}
+                              onChange={(e, data) => {
+                                setMetric(data.value, index, "compareType");
+                              }}
+                            />
+                          </Form.Field>
+
                           <Form.Field>
                             <Input
                               fluid

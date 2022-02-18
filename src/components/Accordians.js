@@ -57,6 +57,7 @@ export const Accordians = ({
         Display Restaurant Data Table
       </Accordion.Title>
       <Accordion.Content active={accordianIndex.activeIndex === 1}>
+      {results.length > 0 ? (
         <Table >
           <Table.Header>
             <Table.Row>
@@ -66,7 +67,7 @@ export const Accordians = ({
             </Table.Row>
           </Table.Header>
 
-          {results.length > 0 ? (
+          
             <Table.Body>
               {results
                 .slice(
@@ -108,16 +109,17 @@ export const Accordians = ({
                   );
                 })}
             </Table.Body>
-          ) : (
-              
-              <Message size = "tiny"  warning>
+          
+        </Table>):
+      
+              (<Message size = "tiny"  warning>
                 <Message.Header>No restaurant data found</Message.Header>
                 <p>Check your search parameters again</p>
               </Message>
+  
               
             
           )}
-        </Table>
         {results.length > 0 ? (
           <Pagination
             size="small"
